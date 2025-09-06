@@ -1,0 +1,211 @@
+<template>
+  <div class="chat-area">
+    <!-- 消息列表 -->
+    <div class="messages-container" ref="messagesContainer">
+      <div v-if="messages.length === 0" class="empty-state">
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
+          </svg>
+        </div>
+        <h3 class="empty-title">开始新的对话</h3>
+        <p class="empty-description">向 AI 助手提问，开始您的智能对话体验</p>
+      </div>
+      
+      <div v-else class="messages-list">
+        <MessageBubble
+          v-for="message in messages"
+          :key="message.id"
+          :message="message"
+          @regenerate="regenerateMessage"
+          @edit="editMessage"
+          @copy="copyMessage"
+        />
+      </div>
+    </div>
+    
+    <!-- 输入区域 -->
+    <InputArea 
+      @send-message="handleSendMessage"
+      @upload-image="handleUploadImage"
+    />
+  </div>
+</template>
+
+<script>
+import { ref, nextTick, watch } from 'vue'
+import MessageBubble from './MessageBubble.vue'
+import InputArea from './InputArea.vue'
+
+export default {
+  name: 'ChatArea',
+  components: {
+    MessageBubble,
+    InputArea
+  },
+  props: {
+    messages: {
+      type: Array,
+      default: () => []
+    }
+  },
+  emits: ['send-message', 'regenerate-message', 'edit-message', 'copy-message'],
+  setup(props, { emit }) {
+    const messagesContainer = ref(null)
+    
+    // 自动滚动到底部
+    const scrollToBottom = () => {
+      nextTick(() => {
+        if (messagesContainer.value) {
+          messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+        }
+      })
+    }
+    
+    // 监听消息变化，自动滚动
+    watch(() => props.messages, () => {
+      scrollToBottom()
+    }, { deep: true })
+    
+    // 处理发送消息
+    const handleSendMessage = (content) => {
+      emit('send-message', {
+        id: Date.now().toString(),
+        type: 'user',
+        content,
+        timestamp: new Date()
+      })
+    }
+    
+    // 处理图片上传
+    const handleUploadImage = (file) => {
+      console.log('上传图片:', file)
+      // TODO: 实现图片上传逻辑
+    }
+    
+    // 重新生成消息
+    const regenerateMessage = (messageId) => {
+      emit('regenerate-message', messageId)
+    }
+    
+    // 编辑消息
+    const editMessage = (messageId) => {
+      emit('edit-message', messageId)
+    }
+    
+    // 复制消息
+    const copyMessage = (messageId) => {
+      emit('copy-message', messageId)
+    }
+    
+    return {
+      messagesContainer,
+      handleSendMessage,
+      handleUploadImage,
+      regenerateMessage,
+      editMessage,
+      copyMessage
+    }
+  }
+}
+</script>
+
+<style scoped>
+.chat-area {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--bg-primary);
+}
+
+.messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-6);
+  scroll-behavior: smooth;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.empty-icon {
+  width: 80px;
+  height: 80px;
+  margin-bottom: var(--spacing-6);
+  opacity: 0.5;
+}
+
+.empty-icon svg {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
+
+.empty-title {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-2) 0;
+}
+
+.empty-description {
+  font-size: var(--font-size-base);
+  color: var(--text-secondary);
+  margin: 0;
+  max-width: 400px;
+}
+
+.messages-list {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+/* 滚动条样式 */
+.messages-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.messages-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.messages-container::-webkit-scrollbar-thumb {
+  background-color: var(--gray-300);
+  border-radius: var(--radius-full);
+}
+
+.messages-container::-webkit-scrollbar-thumb:hover {
+  background-color: var(--gray-400);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .messages-container {
+    padding: var(--spacing-4);
+  }
+  
+  .empty-icon {
+    width: 60px;
+    height: 60px;
+    margin-bottom: var(--spacing-4);
+  }
+  
+  .empty-title {
+    font-size: var(--font-size-lg);
+  }
+  
+  .empty-description {
+    font-size: var(--font-size-sm);
+  }
+}
+</style>
