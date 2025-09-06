@@ -1,0 +1,17 @@
+{
+    "name": "AI Conversation",
+    "short_name": "AI Chat",
+    "description": "一个类似 Google Gemini 的智能对话 Web 应用",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#4285f4",
+    "orientation": "portrait-primary",
+    "icons": [
+        {
+            "src": "/favicon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml"
+        }
+    ]
+}

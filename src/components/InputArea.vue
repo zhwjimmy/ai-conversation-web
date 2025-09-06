@@ -221,13 +221,14 @@ export default {
 
 <style scoped>
 .input-area {
-  padding: var(--spacing-4) var(--spacing-6);
+  padding: var(--spacing-6);
   background-color: var(--bg-primary);
   border-top: 1px solid var(--border-color);
+  flex-shrink: 0; /* 防止输入区域被压缩 */
 }
 
 .input-container {
-  max-width: 800px;
+  max-width: 100%;
   margin: 0 auto;
 }
 
@@ -275,16 +276,17 @@ export default {
   display: flex;
   align-items: flex-end;
   gap: var(--spacing-2);
-  padding: var(--spacing-3);
-  background-color: var(--bg-secondary);
+  padding: var(--spacing-4);
+  background-color: var(--bg-primary);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   transition: border-color 0.2s ease;
+  box-shadow: var(--shadow-sm);
 }
 
 .input-wrapper:focus-within {
   border-color: var(--primary-blue);
-  box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.1);
+  box-shadow: 0 0 0 1px var(--primary-blue);
 }
 
 .message-input {

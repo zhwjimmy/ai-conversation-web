@@ -4,8 +4,10 @@
     <Sidebar 
       :conversations="conversations"
       :current-conversation-id="currentConversationId"
+      :visible="sidebarVisible"
       @select-conversation="selectConversation"
-      @new-conversation="createNewConversation"
+      @toggle-sidebar="toggleSidebar"
+      @open-search="openSearch"
     />
     
     <!-- 主内容区域 -->
@@ -26,28 +28,31 @@
         </div>
         
         <div class="toolbar-right">
-          <button class="toolbar-button" @click="shareConversation">
+          <div class="user-avatar">
             <svg class="icon" viewBox="0 0 24 24">
-              <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/>
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
             </svg>
-            分享
-          </button>
-          <button class="toolbar-button" @click="exportConversation">
-            <svg class="icon" viewBox="0 0 24 24">
-              <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
-            </svg>
-            导出
-          </button>
+          </div>
         </div>
       </header>
       
       <!-- 对话区域 -->
       <ChatArea 
+        v-if="!searchVisible"
+        ref="chatAreaRef"
         :messages="currentMessages"
-        @send-message="sendMessage"
         @regenerate-message="regenerateMessage"
         @edit-message="editMessage"
         @copy-message="copyMessage"
+      />
+      
+      <!-- 搜索页面 -->
+      <SearchPage 
+        v-if="searchVisible"
+        :conversations="conversations"
+        :visible="searchVisible"
+        @select-conversation="selectConversation"
+        @close-search="closeSearch"
       />
     </main>
   </div>
@@ -57,50 +62,67 @@
 import { ref, computed, onMounted } from 'vue'
 import Sidebar from './components/Sidebar.vue'
 import ChatArea from './components/ChatArea.vue'
+import SearchPage from './components/SearchPage.vue'
 import { mockConversations, mockMessages } from './utils/mockData.js'
 
 export default {
   name: 'App',
   components: {
     Sidebar,
-    ChatArea
+    ChatArea,
+    SearchPage
   },
   setup() {
     // 响应式数据
     const conversations = ref(mockConversations)
     const currentConversationId = ref(conversations.value[0]?.id || null)
     const sidebarVisible = ref(true)
+    const searchVisible = ref(false)
+    const chatAreaRef = ref(null)
     
     // 计算属性
     const currentMessages = computed(() => {
       if (!currentConversationId.value) return []
-      return mockMessages[currentConversationId.value] || []
+      const messages = mockMessages[currentConversationId.value]
+      return Array.isArray(messages) ? messages : []
     })
     
     // 方法
     const selectConversation = (conversationId) => {
-      currentConversationId.value = conversationId
+      try {
+        currentConversationId.value = conversationId
+        // 如果搜索页面正在显示，关闭搜索页面
+        if (searchVisible.value) {
+          searchVisible.value = false
+        }
+        // 切换对话后滚动到顶部
+        setTimeout(() => {
+          try {
+            if (chatAreaRef.value && typeof chatAreaRef.value.scrollToTop === 'function') {
+              chatAreaRef.value.scrollToTop()
+            }
+          } catch (error) {
+            console.warn('切换对话滚动失败:', error)
+          }
+        }, 200)
+      } catch (error) {
+        console.warn('切换对话失败:', error)
+      }
     }
     
-    const createNewConversation = () => {
-      const newConversation = {
-        id: Date.now().toString(),
-        title: '新对话',
-        timestamp: new Date(),
-        messageCount: 0
-      }
-      conversations.value.unshift(newConversation)
-      currentConversationId.value = newConversation.id
-    }
     
     const toggleSidebar = () => {
       sidebarVisible.value = !sidebarVisible.value
     }
     
-    const sendMessage = (message) => {
-      console.log('发送消息:', message)
-      // TODO: 实现消息发送逻辑
+    const openSearch = () => {
+      searchVisible.value = true
     }
+    
+    const closeSearch = () => {
+      searchVisible.value = false
+    }
+    
     
     const regenerateMessage = (messageId) => {
       console.log('重新生成消息:', messageId)
@@ -136,11 +158,13 @@ export default {
       conversations,
       currentConversationId,
       sidebarVisible,
+      searchVisible,
+      chatAreaRef,
       currentMessages,
       selectConversation,
-      createNewConversation,
       toggleSidebar,
-      sendMessage,
+      openSearch,
+      closeSearch,
       regenerateMessage,
       editMessage,
       copyMessage,
@@ -164,6 +188,8 @@ export default {
   display: flex;
   flex-direction: column;
   min-width: 0; /* 防止 flex 子元素溢出 */
+  height: 100vh; /* 确保主内容区域占满视口高度 */
+  overflow: hidden; /* 防止整体页面滚动 */
 }
 
 .toolbar {
@@ -211,6 +237,23 @@ export default {
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  background-color: var(--gray-200);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.user-avatar:hover {
+  background-color: var(--gray-300);
 }
 
 .toolbar-button {

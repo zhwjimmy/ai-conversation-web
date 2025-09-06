@@ -24,24 +24,17 @@
       </div>
     </div>
     
-    <!-- 输入区域 -->
-    <InputArea 
-      @send-message="handleSendMessage"
-      @upload-image="handleUploadImage"
-    />
   </div>
 </template>
 
 <script>
-import { ref, nextTick, watch } from 'vue'
+import { ref, nextTick, watch, defineExpose, onUnmounted } from 'vue'
 import MessageBubble from './MessageBubble.vue'
-import InputArea from './InputArea.vue'
 
 export default {
   name: 'ChatArea',
   components: {
-    MessageBubble,
-    InputArea
+    MessageBubble
   },
   props: {
     messages: {
@@ -49,39 +42,58 @@ export default {
       default: () => []
     }
   },
-  emits: ['send-message', 'regenerate-message', 'edit-message', 'copy-message'],
+  emits: ['regenerate-message', 'edit-message', 'copy-message'],
   setup(props, { emit }) {
     const messagesContainer = ref(null)
     
     // 自动滚动到底部
-    const scrollToBottom = () => {
+    const scrollToBottom = (smooth = true) => {
       nextTick(() => {
-        if (messagesContainer.value) {
-          messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+        try {
+          if (messagesContainer.value && messagesContainer.value.scrollTo) {
+            messagesContainer.value.scrollTo({
+              top: messagesContainer.value.scrollHeight,
+              behavior: smooth ? 'smooth' : 'auto'
+            })
+          }
+        } catch (error) {
+          console.warn('滚动到底部失败:', error)
+        }
+      })
+    }
+    
+    // 滚动到顶部
+    const scrollToTop = (smooth = true) => {
+      nextTick(() => {
+        try {
+          if (messagesContainer.value && messagesContainer.value.scrollTo) {
+            messagesContainer.value.scrollTo({
+              top: 0,
+              behavior: smooth ? 'smooth' : 'auto'
+            })
+          }
+        } catch (error) {
+          console.warn('滚动到顶部失败:', error)
         }
       })
     }
     
     // 监听消息变化，自动滚动
-    watch(() => props.messages, () => {
-      scrollToBottom()
+    const stopWatcher = watch(() => props.messages, (newMessages) => {
+      if (newMessages && newMessages.length > 0) {
+        scrollToBottom()
+      }
     }, { deep: true })
     
-    // 处理发送消息
-    const handleSendMessage = (content) => {
-      emit('send-message', {
-        id: Date.now().toString(),
-        type: 'user',
-        content,
-        timestamp: new Date()
-      })
-    }
+    // 组件销毁时清理
+    onUnmounted(() => {
+      try {
+        stopWatcher()
+      } catch (error) {
+        console.warn('清理 watcher 失败:', error)
+      }
+    })
     
-    // 处理图片上传
-    const handleUploadImage = (file) => {
-      console.log('上传图片:', file)
-      // TODO: 实现图片上传逻辑
-    }
     
     // 重新生成消息
     const regenerateMessage = (messageId) => {
@@ -98,10 +110,14 @@ export default {
       emit('copy-message', messageId)
     }
     
+    // 暴露方法给父组件
+    defineExpose({
+      scrollToBottom,
+      scrollToTop
+    })
+    
     return {
       messagesContainer,
-      handleSendMessage,
-      handleUploadImage,
       regenerateMessage,
       editMessage,
       copyMessage
@@ -116,13 +132,15 @@ export default {
   flex-direction: column;
   height: 100%;
   background-color: var(--bg-primary);
+  min-height: 0; /* 确保 flex 子元素可以收缩 */
 }
 
 .messages-container {
   flex: 1;
   overflow-y: auto;
-  padding: var(--spacing-6);
+  padding: var(--spacing-8) 120px;
   scroll-behavior: smooth;
+  min-height: 0; /* 确保可以滚动 */
 }
 
 .empty-state {
@@ -163,11 +181,11 @@ export default {
 }
 
 .messages-list {
-  max-width: 800px;
+  max-width: 100%;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-4);
+  gap: var(--spacing-6);
 }
 
 /* 滚动条样式 */
@@ -191,7 +209,7 @@ export default {
 /* 响应式设计 */
 @media (max-width: 768px) {
   .messages-container {
-    padding: var(--spacing-4);
+    padding: var(--spacing-6) var(--spacing-4);
   }
   
   .empty-icon {
