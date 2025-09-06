@@ -77,6 +77,17 @@ npm run build
 - [设计规范](./docs/design.md)
 - [需求文档](./docs/requirements.md)
 
+## 文档指南
+
+### 后端开发者
+如果您是后端开发者，对 Vue.js 不太熟悉，建议阅读：
+- [Vue.js 快速入门指南](./docs/vue-guide.md) - 从后端开发者的角度理解 Vue.js
+- [后端集成指南](./docs/backend-integration.md) - 如何将前端与后端 API 集成
+
+### 前端开发者
+- [开发指南](./docs/development.md) - 开发环境搭建和部署
+- [设计规范](./docs/design.md) - UI/UX 设计指南
+
 ## 浏览器支持
 
 - Chrome >= 88
