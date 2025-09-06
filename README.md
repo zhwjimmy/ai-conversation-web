@@ -87,6 +87,7 @@ npm run build
 ### 前端开发者
 - [开发指南](./docs/development.md) - 开发环境搭建和部署
 - [设计规范](./docs/design.md) - UI/UX 设计指南
+- [故障排除](./docs/troubleshooting.md) - 常见问题及解决方案
 
 ## 浏览器支持
 
